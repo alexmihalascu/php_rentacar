@@ -3,15 +3,68 @@ session_start();
 include 'configurare_bd.php';
 include 'navbar.php';
 
-// Verifică dacă utilizatorul este logat
 if (!isset($_SESSION['logat'])) {
     header('Location: autentificare.php');
     exit();
 }
 
+$whereClauses = [];
+$params = [];
+$types = "";
+
+if (!empty($_GET['transmisie']) && in_array($_GET['transmisie'], ['Automata', 'Manuala'])) {
+    $whereClauses[] = "transmisie = ?";
+    $params[] = $_GET['transmisie'];
+    $types .= "s";
+}
+
+if (!empty($_GET['pret_max'])) {
+    $whereClauses[] = "pret_inchiriere <= ?";
+    $params[] = $_GET['pret_max'];
+    $types .= "i";
+}
+
+if (!empty($_GET['motorizare']) && in_array($_GET['motorizare'], ['Benzina', 'Diesel', 'Hibrid', 'Electric'])) {
+    $whereClauses[] = "motorizare = ?";
+    $params[] = $_GET['motorizare'];
+    $types .= "s";
+}
+
 $sql = "SELECT * FROM Masini";
-$result = $conn->query($sql);
+if (!empty($whereClauses)) {
+    $sql .= " WHERE " . join(" AND ", $whereClauses);
+}
+
+$orderClause = "";
+if (!empty($_GET['sortare'])) {
+    switch ($_GET['sortare']) {
+        case 'an_asc':
+            $orderClause = "ORDER BY an ASC";
+            break;
+        case 'an_desc':
+            $orderClause = "ORDER BY an DESC";
+            break;
+        case 'pret_asc':
+            $orderClause = "ORDER BY pret_inchiriere ASC";
+            break;
+        case 'pret_desc':
+            $orderClause = "ORDER BY pret_inchiriere DESC";
+            break;
+    }
+}
+
+$sql .= " " . $orderClause;
+
+$stmt = $conn->prepare($sql);
+if ($types) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+
+$conn->close();
 ?>
+
 <!DOCTYPE html>
 <html lang="ro">
 <head>
@@ -24,48 +77,69 @@ $result = $conn->query($sql);
 <body>
 <div class="container">
     <h2>Mașini Disponibile pentru Închiriere</h2>
-    <?php
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            echo "<div class='card mb-3'><div class='card-body'>";
-            echo "<h5 class='card-title'>" . $row["marca"]. " " . $row["model"]. "</h5>";
-            echo "<p class='card-text'>An: " . $row["an"]. " - Preț: " . $row["pret_inchiriere"]. " RON</p>";
-            echo "<p class='card-text'>Motorizare: " . $row["motorizare"]. " - Consum: " . $row["consum"]. " l/100km</p>";
-            echo "<p class='card-text'>Transmisie: " . $row["transmisie"]. "</p>";
-            $idMasina = $row["id"];
-            $folderMasina = "img/poze_masini/masina_$idMasina";
-            $pozeMasina = scandir($folderMasina);
-            $pozeMasina = array_slice($pozeMasina, 2);
-            if (count($pozeMasina) > 0) {
-                echo "<div id='carouselMasina$idMasina' class='carousel slide' data-bs-ride='carousel'>";
-                echo "<div class='carousel-inner'>";
-                foreach ($pozeMasina as $index => $pozaMasina) {
-                    $active = $index == 0 ? "active" : "";
-                    echo "<div class='carousel-item $active'>";
-                    echo "<img src='$folderMasina/$pozaMasina' class='d-block w-10% h-10%' alt='Poza $index'>";
-                    echo "</div>";
-                }
-                echo "</div>";
-                echo "<button class='carousel-control-prev' type='button' data-bs-target='#carouselMasina$idMasina' data-bs-slide='prev'>";
-                echo "<span class='carousel-control-prev-icon' aria-hidden='true'></span>";
-                echo "<span class='visually-hidden'>Previous</span>";
-                echo "</button>";
-                echo "<button class='carousel-control-next' type='button' data-bs-target='#carouselMasina$idMasina' data-bs-slide='next'>";
-                echo "<span class='carousel-control-next-icon' aria-hidden='true'></span>";
-                echo "<span class='visually-hidden'>Next</span>";
-                echo "</button>";
-                echo "</div>";
-            }
-            
-            echo "<a href='inchiriaza_masina.php?id=" . $row["id"]. "' class='btn btn-primary'>Închiriază</a>";
+    <form action="index.php" method="get">
+    <div class="form-group">
+        <label for="transmisie">Transmisie:</label>
+        <select class="form-control" name="transmisie" id="transmisie">
+    <option value="Toate" <?php if(isset($_GET['transmisie']) && $_GET['transmisie'] == 'toate') echo 'selected'; ?>>Toate</option>
+    <option value="Automata" <?php if(isset($_GET['transmisie']) && $_GET['transmisie'] == 'Automata') echo 'selected'; ?>>Automată</option>
+    <option value="Manuala" <?php if(isset($_GET['transmisie']) && $_GET['transmisie'] == 'Manuala') echo 'selected'; ?>>Manuală</option>
+</select>
+<div class="form-group">
+    <label for="motorizare">Motorizare:</label>
+    <select class="form-control" name="motorizare" id="motorizare">
+        <option value="">Toate</option>
+        <option value="Benzina" <?php if(isset($_GET['motorizare']) && $_GET['motorizare'] == 'Benzina') echo 'selected'; ?>>Benzină</option>
+        <option value="Diesel" <?php if(isset($_GET['motorizare']) && $_GET['motorizare'] == 'Diesel') echo 'selected'; ?>>Diesel</option>
+        <option value="Hibrid" <?php if(isset($_GET['motorizare']) && $_GET['motorizare'] == 'Hibrid') echo 'selected'; ?>>Hibrid</option>
+        <option value="Electric" <?php if(isset($_GET['motorizare']) && $_GET['motorizare'] == 'Electric') echo 'selected'; ?>>Electric</option>
+    </select>
+</div>
+<div class="form-group">
+<label for="motorizare">Filtrare după:</label>
+<select class="form-control" name="sortare" id="sortare">
+    <option value="an_asc" <?php if(isset($_GET['sortare']) && $_GET['sortare'] == 'an_asc') echo 'selected'; ?>>An (Crescător)</option>
+    <option value="an_desc" <?php if(isset($_GET['sortare']) && $_GET['sortare'] == 'an_desc') echo 'selected'; ?>>An (Descrescător)</option>
+    <option value="pret_asc" <?php if(isset($_GET['sortare']) && $_GET['sortare'] == 'pret_asc') echo 'selected'; ?>>Preț (Crescător)</option>
+    <option value="pret_desc" <?php if(isset($_GET['sortare']) && $_GET['sortare'] == 'pret_desc') echo 'selected'; ?>>Preț (Descrescător)</option>
+</select>
+</div>
+    </div>
+    <div class="form-group mb-3">
+        <label for="pret_max">Preț maxim:</label>
+        <input type="number" class="form-control" name="pret_max" id="pret_max">
+    </div>
+    <button type="submit" class="btn btn-primary">Filtrează</button>
+</form>
 
-            echo "</div></div>";
+<div class="row">
+        <?php
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $idMasina = $row["id"];
+                $folderMasina = "img/poze_masini/masina_$idMasina";
+                $pozeMasina = scandir($folderMasina);
+                $pozeMasina = array_slice($pozeMasina, 2);
+                $primaImagine = count($pozeMasina) > 0 ? "$folderMasina/".$pozeMasina[0] : "img/iconite/avatar.jpg"; // Imagine implicită dacă nu există
+
+                echo "<div class='col-md-6 mb-4'>";
+                echo "<div class='card'>";
+                echo "<a href='masina.php?id=" . $row["id"] . "' class='card-img-link'>";
+                echo "<img src='$primaImagine' class='card-img-top' alt='Imagine Masina'>";
+                echo "</a>";
+                echo "<div class='card-body'>";
+                echo "<h5 class='card-title'>" . $row["marca"]. " " . $row["model"]. "</h5>";
+                echo "<p class='card-text'>An: " . $row["an"]. "<br>";
+                echo "Transmisie: " . $row["transmisie"]. "<br>";
+                echo "Preț: " . $row["pret_inchiriere"]. " RON / zi</p>";
+                echo "<a href='inchiriaza_masina.php?id_masina=" . $row["id"] . "' class='btn btn-primary'>Închiriază</a>";
+                echo "</div></div></div>";
+            }
+        } else {
+            echo "<p class='col-12'>Nu sunt mașini disponibile.</p>";
         }
-    } else {
-        echo "<p>Nu sunt mașini disponibile.</p>";
-    }
-    $conn->close();
-    ?>
+        ?>
+    </div>
 </div>
 <script src="js/bootstrap.bundle.min.js"></script>
 </body>

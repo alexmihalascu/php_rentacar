@@ -3,18 +3,24 @@ session_start();
 include 'configurare_bd.php';
 include 'navbar.php';
 
-if (!isset($_SESSION['logat'])) {
+// Verifică dacă utilizatorul este logat și are un ID de utilizator setat
+if (!isset($_SESSION['logat']) || !isset($_SESSION['id_utilizator'])) {
     header('Location: autentificare.php');
     exit();
 }
 
-$username = $_SESSION['username'];
-$sql = "SELECT Inchirieri.*, Masini.marca, Masini.model 
-        FROM Inchirieri 
-        JOIN Masini ON Inchirieri.id_masina = Masini.id
-        JOIN Utilizatori ON Inchirieri.id_utilizator = Utilizatori.id
-        WHERE Utilizatori.username = '$username'";
-$result = $conn->query($sql);
+$idUtilizator = $_SESSION['id_utilizator'];
+
+// Definirea interogării SQL pentru a recupera închirierile utilizatorului
+$sql = "SELECT Masini.marca, Masini.model, CereriInchiriere.data_inceput, CereriInchiriere.data_sfarsit, CereriInchiriere.status 
+        FROM CereriInchiriere 
+        JOIN Masini ON CereriInchiriere.id_masina = Masini.id 
+        WHERE CereriInchiriere.id_utilizator = ?";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $idUtilizator);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $conn->close();
 ?>

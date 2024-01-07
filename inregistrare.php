@@ -4,17 +4,22 @@ include 'configurare_bd.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $conn->real_escape_string($_POST['username']);
-    $parola = password_hash($conn->real_escape_string($_POST['password']), PASSWORD_DEFAULT);
+    $parola = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-    $sql = "INSERT INTO Utilizatori (username, parola) VALUES ('$username', '$parola')";
+    $stmt = $conn->prepare("INSERT INTO Utilizatori (username, parola) VALUES (?, ?)");
+    $stmt->bind_param("ss", $username, $parola);
 
-    if ($conn->query($sql) === TRUE) {
+    if ($stmt->execute()) {
+        header('Location: autentificare.php');
+        exit();
     } else {
-        echo "<p>Eroare la înregistrare: " . $conn->error . "</p>";
+        echo "<p>Eroare la înregistrare: " . $stmt->error . "</p>";
     }
+    $stmt->close();
 }
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="ro">

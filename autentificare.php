@@ -6,16 +6,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $conn->real_escape_string($_POST['username']);
     $parolaIntrodusa = $_POST['password']; 
 
-    $sql = "SELECT * FROM Utilizatori WHERE username = '$username'";
-    $result = $conn->query($sql);
+    $stmt = $conn->prepare("SELECT * FROM Utilizatori WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
         if (password_verify($parolaIntrodusa, $row['parola'])) {
             $_SESSION['logat'] = true;
             $_SESSION['username'] = $username;
-            $_SESSION['este_admin'] = $row['este_admin']; // Setează variabila de sesiune este_admin
-
+            $_SESSION['este_admin'] = $row['este_admin'];
+            $_SESSION['id_utilizator'] = $row['id']; 
             header('Location: index.php');
             exit();
         } else {
@@ -24,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         echo "<p>Nume de utilizator inexistent</p>";
     }
+    $stmt->close();
 }
 $conn->close();
 ?>

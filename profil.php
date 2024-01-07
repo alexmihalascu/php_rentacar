@@ -10,7 +10,6 @@ if (!isset($_SESSION['logat'])) {
 
 $msg = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Preia datele din formular
     $usernameNou = $conn->real_escape_string($_POST['username']);
     $parolaNoua = !empty($_POST['parola']) ? password_hash($_POST['parola'], PASSWORD_DEFAULT) : '';
     $nume = $conn->real_escape_string($_POST['nume']);
@@ -21,31 +20,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $usernameVechi = $_SESSION['username'];
 
-    // Construiește interogarea SQL
-    $sql = "UPDATE Utilizatori SET ";
-    $sql .= "username = '$usernameNou', ";
-    $sql .= $parolaNoua ? "parola = '$parolaNoua', " : "";
-    $sql .= "nume = '$nume', prenume = '$prenume', ";
-    $sql .= "cnp = '$cnp', data_nasterii = '$dataNasterii', numar_permis = '$numarPermis' ";
-    $sql .= "WHERE username = '$usernameVechi'";
+    $sql = "UPDATE Utilizatori SET username = ?, nume = ?, prenume = ?, cnp = ?, data_nasterii = ?, numar_permis = ?";
+    if($parolaNoua) {
+        $sql .= ", parola = ?";
+    }
+    $sql .= " WHERE username = ?";
 
-    // Execută interogarea
-    if ($conn->query($sql) === TRUE) {
-        $_SESSION['username'] = $usernameNou; // Actualizează numele de utilizator în sesiune
+    $stmt = $conn->prepare($sql);
+    $parolaNoua ? $stmt->bind_param("ssssssss", $usernameNou, $nume, $prenume, $cnp, $dataNasterii, $numarPermis, $parolaNoua, $usernameVechi) : $stmt->bind_param("sssssss", $usernameNou, $nume, $prenume, $cnp, $dataNasterii, $numarPermis, $usernameVechi);
+
+    if ($stmt->execute()) {
+        $_SESSION['username'] = $usernameNou;
         $msg = "Profil actualizat cu succes.";
     } else {
-        $msg = "Eroare: " . $conn->error;
+        $msg = "Eroare: " . $stmt->error;
     }
+    $stmt->close();
 }
 
 // Preia datele actuale ale utilizatorului pentru a le afișa în formular
 $username = $_SESSION['username'];
-$sql = "SELECT * FROM Utilizatori WHERE username = '$username'";
-$result = $conn->query($sql);
+$stmt = $conn->prepare("SELECT * FROM Utilizatori WHERE username = ?");
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$result = $stmt->get_result();
 $row = $result->fetch_assoc();
 
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="ro">
@@ -59,12 +62,7 @@ $conn->close();
 <body>
 <div class="container rounded bg-white mt-5 mb-5">
     <div class="row">
-        <div class="col-md-3 border-right">
-            <div class="d-flex flex-column align-items-center text-center p-3 py-5">
-                <img class="rounded-circle mt-5" width="150px" src="img/iconite/avatar.jpg" alt="Profil">
-                <span class="font-weight-bold"><?php echo $row['nume'] . ' ' . $row['prenume']; ?></span>
-                <span class="text-black-50"><?php echo $row['username']; ?></span>
-            </div>
+        <div class="col-md-2 border-right d-flex align-items-center">
         </div>
         <div class="col-md-9">
             <div class="p-3 py-5">

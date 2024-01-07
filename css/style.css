@@ -33,3 +33,60 @@ body {
 .nav-link:hover {
     color: #ddd;
 }
+
+.card {
+    margin-bottom: 20px;
+    border: none;
+}
+
+/* Modificarea stilului imaginii */
+.card .card-img-top {
+    transition: transform 0.5s;
+    max-height: 250px; /* Setează înălțimea maximă a imaginii */
+    object-fit: cover; /* Asigură că imaginea se potrivește perfect în spațiu */
+}
+
+/* Stiluri pentru overlay */
+.overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card:hover .overlay {
+    opacity: 1;
+}
+
+.overlay-content a {
+    color: #fff;
+    font-size: 20px;
+    text-decoration: none;
+}
+
+.card-content {
+    padding: 15px;
+}
+
+.card-content h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.card-content p {
+    color: #666;
+    font-size: 14px;
+}
+
+@media screen and (min-width:992px){
+    .nav-item {
+    line-height:80px;
+    }
+  }
