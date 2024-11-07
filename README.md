@@ -28,17 +28,14 @@
 4. **Create the Database**:
    - Open your browser and go to [http://localhost/phpmyadmin](http://localhost/phpmyadmin).
    - Create a new database named `InchirieriAuto`.
-   - Import the database schema:
-     - Click on `InchirieriAuto` and select `Import`.
-     - Choose the `.sql` file located in the repository (usually found in the `database` folder) to create the necessary tables and structure.
 
 5. **Update Database Connection in Project Files**:
-   - In the project files, locate the configuration file (e.g., `config.php`) and update it with your database credentials:
+   - In the project files, locate the configuration file (`configurare_bd.php`) and update it with your database credentials:
      ```php
-     define('DB_SERVER', 'localhost');
-     define('DB_USERNAME', 'root');
-     define('DB_PASSWORD', '');
-     define('DB_NAME', 'InchirieriAuto');
+     $host = 'localhost';
+      $utilizator_bd = 'root';
+      $parola_bd = '';
+      $nume_bd = 'InchirieriAuto';
      ```
 
 6. **Access the Project in the Browser**:
