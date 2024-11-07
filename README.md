@@ -7,6 +7,7 @@
 
 - **XAMPP**: Download and install XAMPP to set up a local server environment for this project.
 - **PHPMyAdmin**: Used for database management.
+- **MySQL**: Used for database.
 
 ## 🚀 Installation Steps
 
